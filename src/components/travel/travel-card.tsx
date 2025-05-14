@@ -1,3 +1,4 @@
+
 import { TravelPlan } from "@/@types";
 import LatioCard from "../ui/latio-card";
 import { Calendar, MapPin } from "lucide-react";
@@ -64,13 +65,6 @@ const TravelCard = ({
               : spentPercentage > 70
                 ? "bg-amber-100"
                 : "bg-green-100"
-          )}
-          indicatorClassName={cn(
-            spentPercentage > 90
-              ? "bg-red-500"
-              : spentPercentage > 70
-                ? "bg-amber-500"
-                : "bg-green-500"
           )}
         />
       </div>

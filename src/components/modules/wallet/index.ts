@@ -1,1 +1,2 @@
-export { default as Wallet } from "./pages/wallet";
+
+export { default as Wallet } from "./pages/wallet-page";
