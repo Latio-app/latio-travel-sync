@@ -1,62 +1,54 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { PasskeyKit } from "passkey-kit";
+import {
+  passkey,
+  connectWallet,
+  syncWallet as syncWalletPasskey,
+} from "@/lib/passkey";
 
 type WalletProviderProps = {
   children: React.ReactNode;
 };
 
 type WalletProviderState = {
-  passkeyKit: PasskeyKit | null;
   isConnected: boolean;
   publicKey: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  syncWallet: () => Promise<void>;
 };
 
 const initialState: WalletProviderState = {
-  passkeyKit: null,
   isConnected: false,
   publicKey: null,
   connect: async () => {},
   disconnect: () => {},
+  syncWallet: async () => {},
 };
 
 const WalletProviderContext = createContext<WalletProviderState>(initialState);
 
 export function WalletProvider({ children }: WalletProviderProps) {
-  const [passkeyKit, setPasskeyKit] = useState<PasskeyKit | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [publicKey, setPublicKey] = useState<string | null>(null);
 
   useEffect(() => {
-    const initPasskeyKit = async () => {
-      const kit = new PasskeyKit({
-        network: "testnet", // or "public" for mainnet
-        rpcUrl: "https://soroban-testnet.stellar.org", // or mainnet URL
-      });
-      setPasskeyKit(kit);
-
-      // Check if already connected
-      const storedPublicKey = localStorage.getItem("wallet-public-key");
-      if (storedPublicKey) {
-        setPublicKey(storedPublicKey);
-        setIsConnected(true);
-      }
-    };
-
-    initPasskeyKit();
+    // Check if already connected
+    const storedPublicKey = localStorage.getItem("wallet-public-key");
+    if (storedPublicKey) {
+      setPublicKey(storedPublicKey);
+      setIsConnected(true);
+    }
   }, []);
 
   const connect = async () => {
-    if (!passkeyKit) return;
-
     try {
-      const { publicKey: newPublicKey } = await passkeyKit.connect();
-      setPublicKey(newPublicKey);
+      const account = await connectWallet();
+      setPublicKey(account.publicKey);
       setIsConnected(true);
-      localStorage.setItem("wallet-public-key", newPublicKey);
+      localStorage.setItem("wallet-public-key", account.publicKey);
     } catch (error) {
       console.error("Failed to connect wallet:", error);
+      throw error;
     }
   };
 
@@ -66,12 +58,24 @@ export function WalletProvider({ children }: WalletProviderProps) {
     localStorage.removeItem("wallet-public-key");
   };
 
+  const syncWallet = async () => {
+    if (!publicKey) return;
+
+    try {
+      await syncWalletPasskey(publicKey);
+      console.log("🔄 Wallet Synced");
+    } catch (error) {
+      console.error("Failed to sync wallet:", error);
+      throw error;
+    }
+  };
+
   const value = {
-    passkeyKit,
     isConnected,
     publicKey,
     connect,
     disconnect,
+    syncWallet,
   };
 
   return (
