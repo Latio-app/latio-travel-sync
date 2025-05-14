@@ -1,16 +1,10 @@
-
 import { useEffect, useState } from "react";
-import { useStore } from "@/store/useStore";
-import { useWallet } from "@/components/providers/wallet-provider";
 import PageContainer from "@/components/layout/page-container";
 import Navbar from "@/components/layout/navbar";
 import { LoadingState } from "@/components/index/loading-state";
 import { DashboardGrid } from "@/components/index/dashboard-grid";
 import { RecentTransactionsSection } from "@/components/index/recent-transactions-section";
 import { LocalTipsSection } from "@/components/index/local-tips-section";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Wallet } from "lucide-react";
 
 const mockWalletBalance = {
   xlm: 425.68,
@@ -80,8 +74,6 @@ const mockRecommendation = {
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { isConnected, publicKey, connect } = useWallet();
-  const setWalletBalance = useStore((state) => state.setWalletBalance);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -90,23 +82,6 @@ const Index = () => {
 
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    // Set mock wallet balance when connected
-    if (isConnected && publicKey) {
-      setWalletBalance(mockWalletBalance);
-    }
-  }, [isConnected, publicKey, setWalletBalance]);
-
-  const handleConnectWallet = async () => {
-    try {
-      await connect();
-      toast.success("Wallet connected successfully!");
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-      toast.error("Failed to connect wallet. Please try again.");
-    }
-  };
 
   if (isLoading) {
     return <LoadingState />;
@@ -118,26 +93,8 @@ const Index = () => {
         title="Welcome to Latio"
         subtitle="Your cross-border payment & travel companion"
       >
-        {!isConnected && (
-          <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-blue-800">Connect Your Wallet</h3>
-              <p className="text-sm text-blue-600">
-                Connect your PasskeyKit wallet to access all features
-              </p>
-            </div>
-            <Button 
-              onClick={handleConnectWallet}
-              className="bg-latio-blue hover:bg-blue-600"
-            >
-              <Wallet className="h-4 w-4 mr-2" />
-              Connect Wallet
-            </Button>
-          </div>
-        )}
-
         <DashboardGrid
-          walletBalance={isConnected ? mockWalletBalance : null}
+          walletBalance={mockWalletBalance}
           travelPlan={mockTravelPlan}
         />
 

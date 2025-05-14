@@ -1,13 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { Wallet, Map, Clock, Lightbulb, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useWallet } from "@/components/providers/wallet-provider";
 import { Button } from "@/components/ui/button";
-
+import { usePasskey } from "@/context/PasskeyContext";
 const Navbar = () => {
   const location = useLocation();
-  const { isConnected, publicKey, connect, disconnect } = useWallet();
-
+  const { isConnected, connect } = usePasskey();
   const navLinks = [
     {
       name: "Dashboard",
@@ -43,7 +41,7 @@ const Navbar = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:top-0 md:bottom-auto md:shadow-sm z-50">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center md:justify-start md:gap-8 py-3">
+        <div className="flex justify-between items-center py-3">
           {/* Logo for desktop */}
           <div className="hidden md:block">
             <Link to="/" className="flex items-center gap-2">
@@ -74,16 +72,9 @@ const Navbar = () => {
           </div>
 
           {/* Wallet connection */}
-          <div className="hidden md:block">
+          <div className="hidden md:block ml-auto">
             {isConnected ? (
-              <Button
-                variant="outline"
-                onClick={disconnect}
-                className="text-gray-600 border-gray-200"
-              >
-                <Wallet className="h-4 w-4 mr-2" />
-                {formatPublicKey(publicKey!)}
-              </Button>
+              <p>Connected</p>
             ) : (
               <Button
                 onClick={connect}
