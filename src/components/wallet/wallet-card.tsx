@@ -1,3 +1,4 @@
+
 import { WalletBalance } from "@/@types";
 import LatioCard from "../ui/latio-card";
 import { ArrowRight, Wallet } from "lucide-react";
@@ -19,6 +20,10 @@ const WalletCard = ({
   onSync,
   className,
 }: WalletCardProps) => {
+  if (!balance) {
+    return null; // Safety check to prevent rendering with null balance
+  }
+
   return (
     <LatioCard className={cn("relative overflow-hidden", className)}>
       {/* Background gradient */}
