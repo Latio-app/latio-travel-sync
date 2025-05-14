@@ -1,7 +1,13 @@
-
-import { Transaction } from "@/types";
+import { Transaction } from "@/@types";
 import { cn } from "@/lib/utils";
-import { ArrowDownLeft, ArrowUpRight, RefreshCw, Check, X, Clock } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  RefreshCw,
+  Check,
+  X,
+  Clock,
+} from "lucide-react";
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -11,11 +17,11 @@ interface TransactionListProps {
 const TransactionList = ({ transactions, className }: TransactionListProps) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <Check className="h-4 w-4 text-green-500" />;
-      case 'failed':
+      case "failed":
         return <X className="h-4 w-4 text-red-500" />;
-      case 'pending':
+      case "pending":
       default:
         return <Clock className="h-4 w-4 text-amber-500" />;
     }
@@ -23,11 +29,11 @@ const TransactionList = ({ transactions, className }: TransactionListProps) => {
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
-      case 'send':
+      case "send":
         return <ArrowUpRight className="h-5 w-5 text-red-500" />;
-      case 'receive':
+      case "receive":
         return <ArrowDownLeft className="h-5 w-5 text-green-500" />;
-      case 'swap':
+      case "swap":
       default:
         return <RefreshCw className="h-5 w-5 text-latio-blue" />;
     }
@@ -48,28 +54,41 @@ const TransactionList = ({ transactions, className }: TransactionListProps) => {
             <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
               {getTransactionIcon(transaction.type)}
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <h4 className="font-medium text-gray-900 truncate">
-                {transaction.type === 'send' ? `To: ${transaction.recipient}` : 
-                 transaction.type === 'receive' ? `From: ${transaction.recipient}` :
-                 `Swap ${transaction.asset}`}
+                {transaction.type === "send"
+                  ? `To: ${transaction.recipient}`
+                  : transaction.type === "receive"
+                    ? `From: ${transaction.recipient}`
+                    : `Swap ${transaction.asset}`}
               </h4>
-              <p className="text-xs text-gray-500 truncate">{transaction.description || transaction.travelReference || transaction.txHash.substring(0, 10) + '...'}</p>
+              <p className="text-xs text-gray-500 truncate">
+                {transaction.description ||
+                  transaction.travelReference ||
+                  transaction.txHash.substring(0, 10) + "..."}
+              </p>
               <p className="text-xs text-gray-400">
                 {new Date(transaction.timestamp).toLocaleString()}
               </p>
             </div>
-            
+
             <div className="text-right">
-              <p className={cn(
-                "font-medium",
-                transaction.type === 'send' ? "text-red-500" :
-                transaction.type === 'receive' ? "text-green-500" :
-                "text-latio-blue"
-              )}>
-                {transaction.type === 'send' ? '-' : 
-                 transaction.type === 'receive' ? '+' : ''}
+              <p
+                className={cn(
+                  "font-medium",
+                  transaction.type === "send"
+                    ? "text-red-500"
+                    : transaction.type === "receive"
+                      ? "text-green-500"
+                      : "text-latio-blue"
+                )}
+              >
+                {transaction.type === "send"
+                  ? "-"
+                  : transaction.type === "receive"
+                    ? "+"
+                    : ""}
                 {transaction.amount} {transaction.asset}
               </p>
               <div className="flex items-center justify-end gap-1 mt-1">

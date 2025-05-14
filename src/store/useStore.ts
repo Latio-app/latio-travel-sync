@@ -1,27 +1,32 @@
-
-import { create } from 'zustand';
-import { User, WalletBalance, Transaction, TravelPlan, Recommendation } from '@/types';
+import { create } from "zustand";
+import {
+  User,
+  WalletBalance,
+  Transaction,
+  TravelPlan,
+  Recommendation,
+} from "@/@types";
 
 interface AppState {
   // Auth state
   user: User | null;
   isAuthenticated: boolean;
-  
+
   // Wallet state
   walletBalance: WalletBalance | null;
   transactions: Transaction[];
-  
+
   // Travel state
   travelPlans: TravelPlan[];
   activeTravelPlan: TravelPlan | null;
-  
+
   // Recommendations state
   recommendations: Recommendation[];
-  
+
   // App state
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   setUser: (user: User | null) => void;
   setWalletBalance: (balance: WalletBalance) => void;
@@ -44,12 +49,13 @@ export const useStore = create<AppState>((set) => ({
   recommendations: [],
   isLoading: false,
   error: null,
-  
+
   // Actions
-  setUser: (user) => set({ 
-    user, 
-    isAuthenticated: !!user 
-  }),
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: !!user,
+    }),
   setWalletBalance: (walletBalance) => set({ walletBalance }),
   setTransactions: (transactions) => set({ transactions }),
   setTravelPlans: (travelPlans) => set({ travelPlans }),
