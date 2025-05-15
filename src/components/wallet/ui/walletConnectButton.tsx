@@ -11,15 +11,12 @@ const WalletConnectButton = () => {
       setLoading(true);
       console.log("🔗 Creating Wallet with Passkey...");
 
-      // 🔐 **Create a Wallet with app name and user ID**
       const wallet = await account.createWallet("LatioApp", "user@example.com");
       console.log("✅ Wallet Created:", wallet);
 
-      // 🔄 **Get Contract ID from the response**
       const contractId = wallet.contractId;
       console.log("🔗 Contract ID:", contractId);
 
-      // 💡 **New Approach to get balance**
       const accountData = await rpc.getAccount(contractId);
 
       console.log("✅ Account Data:", accountData);
@@ -32,7 +29,6 @@ const WalletConnectButton = () => {
 
       console.log("💰 Balance:", balanceXLM);
 
-      // 🌐 **Update Global State**
       setWalletData(contractId, contractId, balanceXLM);
     } catch (error) {
       console.error("❌ Connection Failed:", error);

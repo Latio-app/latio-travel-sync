@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
-import { PasskeyKit, PasskeyServer, SACClient } from 'passkey-kit';
-import { Server } from '@stellar/stellar-sdk/minimal/rpc';
+import React, { createContext, useContext, useState } from "react";
+import { PasskeyKit, PasskeyServer, SACClient } from "passkey-kit";
+import { Server } from "@stellar/stellar-sdk/minimal/rpc";
 
 interface PasskeyContextProps {
   isConnected: boolean;
+  publicKey: string | null;
   connect: () => void;
 }
 
@@ -11,47 +12,43 @@ const PasskeyContext = createContext<PasskeyContextProps | null>(null);
 
 export const usePasskey = () => useContext(PasskeyContext)!;
 
-export const PasskeyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const PasskeyProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [isConnected, setIsConnected] = useState(false);
+  const [publicKey, setPublicKey] = useState<string | null>(null);
 
   const connect = async () => {
     try {
       const rpc = new Server(import.meta.env.VITE_rpcUrl);
 
-      // Initialize PasskeyKit
       const account = new PasskeyKit({
         rpcUrl: import.meta.env.VITE_rpcUrl,
         networkPassphrase: import.meta.env.VITE_networkPassphrase,
         walletWasmHash: import.meta.env.VITE_walletWasmHash,
       });
 
-      const server = new PasskeyServer({
-        rpcUrl: import.meta.env.VITE_rpcUrl,
-        launchtubeUrl: import.meta.env.VITE_launchtubeUrl,
-        launchtubeJwt: import.meta.env.VITE_launchtubeJwt,
-        mercuryProjectName: import.meta.env.VITE_mercuryProjectName,
-        mercuryUrl: import.meta.env.VITE_mercuryUrl,
-        mercuryJwt: import.meta.env.VITE_mercuryJwt,
-      });
+      const app = "my-stellar-app";
+      const user = "user@example.com";
 
-      const sac = new SACClient({
-        rpcUrl: import.meta.env.VITE_rpcUrl,
-        networkPassphrase: import.meta.env.VITE_networkPassphrase,
-      });
+      console.log(`Creating wallet for App: ${app} and User: ${user}`);
 
-      // Just simulate a simple connection for now
-      const native = sac.getSACClient(import.meta.env.VITE_nativeContractId);
-      if (native) {
+      const response = await account.createWallet(app, user);
+
+      if (response.contractId) {
+        console.log(
+          `Wallet created successfully! Contract ID: ${response.contractId}`
+        );
+        setPublicKey(response.contractId);
         setIsConnected(true);
-        console.log('Wallet connected!');
       }
     } catch (error) {
-      console.error('Connection failed:', error);
+      console.error("Connection failed:", error);
     }
   };
 
   return (
-    <PasskeyContext.Provider value={{ isConnected, connect }}>
+    <PasskeyContext.Provider value={{ isConnected, publicKey, connect }}>
       {children}
     </PasskeyContext.Provider>
   );

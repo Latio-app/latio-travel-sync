@@ -1,11 +1,33 @@
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Wallet, Map, Clock, Lightbulb, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { usePasskey } from "@/context/PasskeyContext";
+import { useWalletStore } from "@/store/useStore";
+
 const Navbar = () => {
   const location = useLocation();
-  const { isConnected, connect } = usePasskey();
+
+  const {
+    walletAddress,
+    connected,
+    loading,
+    connectWallet,
+    disconnectWallet,
+    loadWalletFromStorage,
+  } = useWalletStore();
+
+  React.useEffect(() => {
+    loadWalletFromStorage();
+  }, []);
+
+  const app = "stellar-dapp";
+  const user = "user@example.com";
+
+  const formatPublicKey = (key: string) => {
+    return `${key.slice(0, 4)}...${key.slice(-4)}`;
+  };
+
   const navLinks = [
     {
       name: "Dashboard",
@@ -34,25 +56,16 @@ const Navbar = () => {
     },
   ];
 
-  const formatPublicKey = (key: string) => {
-    return `${key.slice(0, 4)}...${key.slice(-4)}`;
-  };
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:top-0 md:bottom-auto md:shadow-sm z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3">
-          {/* Logo for desktop */}
           <div className="hidden md:block">
             <Link to="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg latio-gradient flex items-center justify-center">
-                <span className="font-bold text-white">L</span>
-              </div>
-              <span className="font-bold text-gray-800">Latio</span>
+              <img src="/latio.svg" alt="Latio" width={100} height={100} />
             </Link>
           </div>
 
-          {/* Navigation links */}
           <div className="flex items-center justify-between w-full md:w-auto md:justify-start md:gap-6">
             {navLinks.map((link) => (
               <Link
@@ -71,17 +84,27 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Wallet connection */}
           <div className="hidden md:block ml-auto">
-            {isConnected ? (
-              <p>Connected</p>
+            {connected ? (
+              <div className="flex items-center gap-3">
+                <span className="text-gray-700">
+                  {formatPublicKey(walletAddress!)}
+                </span>
+                <Button
+                  onClick={disconnectWallet}
+                  className="bg-red-500 hover:bg-red-600 text-white"
+                >
+                  Disconnect
+                </Button>
+              </div>
             ) : (
               <Button
-                onClick={connect}
+                onClick={() => connectWallet(app, user)}
+                disabled={loading}
                 className="bg-latio-blue hover:bg-blue-600 text-white"
               >
                 <Wallet className="h-4 w-4 mr-2" />
-                Connect Wallet
+                {loading ? "Connecting..." : "Connect Wallet"}
               </Button>
             )}
           </div>
