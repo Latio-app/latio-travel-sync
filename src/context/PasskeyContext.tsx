@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState } from "react";
-import { PasskeyKit, PasskeyServer, SACClient } from "passkey-kit";
-import { Server } from "@stellar/stellar-sdk/minimal/rpc";
+import React, { createContext, useContext } from "react";
+import { useWalletStore } from "@/store/useStore";
 
 interface PasskeyContextProps {
   isConnected: boolean;
   publicKey: string | null;
-  connect: () => void;
+  signIn: () => void;
+  signUp: (app: string, user: string) => void;
+  disconnect: () => void;
 }
 
 const PasskeyContext = createContext<PasskeyContextProps | null>(null);
@@ -15,40 +16,24 @@ export const usePasskey = () => useContext(PasskeyContext)!;
 export const PasskeyProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [publicKey, setPublicKey] = useState<string | null>(null);
-
-  const connect = async () => {
-    try {
-      const rpc = new Server(import.meta.env.VITE_rpcUrl);
-
-      const account = new PasskeyKit({
-        rpcUrl: import.meta.env.VITE_rpcUrl,
-        networkPassphrase: import.meta.env.VITE_networkPassphrase,
-        walletWasmHash: import.meta.env.VITE_walletWasmHash,
-      });
-
-      const app = "my-stellar-app";
-      const user = "user@example.com";
-
-      console.log(`Creating wallet for App: ${app} and User: ${user}`);
-
-      const response = await account.createWallet(app, user);
-
-      if (response.contractId) {
-        console.log(
-          `Wallet created successfully! Contract ID: ${response.contractId}`
-        );
-        setPublicKey(response.contractId);
-        setIsConnected(true);
-      }
-    } catch (error) {
-      console.error("Connection failed:", error);
-    }
-  };
+  const {
+    connected,
+    contractId,
+    signInWallet,
+    signUpWallet,
+    disconnectWallet,
+  } = useWalletStore();
 
   return (
-    <PasskeyContext.Provider value={{ isConnected, publicKey, connect }}>
+    <PasskeyContext.Provider
+      value={{
+        isConnected: connected,
+        publicKey: contractId,
+        signIn: signInWallet,
+        signUp: signUpWallet,
+        disconnect: disconnectWallet,
+      }}
+    >
       {children}
     </PasskeyContext.Provider>
   );
