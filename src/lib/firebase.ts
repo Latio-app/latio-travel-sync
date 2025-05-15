@@ -6,6 +6,7 @@ import {
   setDoc,
   Timestamp,
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Types for our user profile
 export interface UserProfile {
@@ -37,6 +38,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 
 // Export Firestore functions
 export { doc, getDoc, setDoc, Timestamp };
