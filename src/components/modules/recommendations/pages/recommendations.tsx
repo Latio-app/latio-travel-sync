@@ -84,8 +84,8 @@ const Recommendations = () => {
       >
         {/* Input form */}
         <form onSubmit={handleSubmit} className="mb-6 animate-fade-in">
-          <LatioCard className="bg-white">
-            <h3 className="font-medium text-gray-800 mb-4">
+          <LatioCard className="bg-white dark:bg-gray-800">
+            <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
               Ask for Recommendations
             </h3>
             <div className="flex gap-2">
@@ -93,7 +93,7 @@ const Recommendations = () => {
                 placeholder="E.g. Where can I find affordable local food in Mexico City?"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="flex-1"
+                className="flex-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"
                 disabled={isLoading}
               />
               <Button
@@ -133,7 +133,7 @@ const Recommendations = () => {
 
           {recommendations.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500">
+              <p className="text-gray-500 dark:text-gray-400">
                 No recommendations yet. Ask your first question!
               </p>
             </div>

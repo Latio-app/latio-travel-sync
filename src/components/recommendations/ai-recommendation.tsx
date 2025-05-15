@@ -20,7 +20,7 @@ const AIRecommendation = ({
   return (
     <LatioCard
       className={cn(
-        "bg-gradient-to-br from-blue-50 to-purple-50 border-blue-100",
+        "bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 border-blue-100 dark:border-gray-700",
         className
       )}
       interactive={false}
@@ -31,11 +31,13 @@ const AIRecommendation = ({
         </div>
 
         <div className="flex-1">
-          <p className="text-xs text-gray-500 mb-1">Latio AI recommends</p>
-          <h4 className="font-medium text-gray-800 mb-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Latio AI recommends
+          </p>
+          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
             {recommendation.prompt}
           </h4>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
             {recommendation.response}
           </p>
 
@@ -43,7 +45,7 @@ const AIRecommendation = ({
             <Button
               size="sm"
               variant="ghost"
-              className="text-gray-500 hover:text-green-500 hover:bg-green-50"
+              className="text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
               onClick={onLike}
             >
               <ThumbsUp className="h-4 w-4 mr-1" />
@@ -52,7 +54,7 @@ const AIRecommendation = ({
             <Button
               size="sm"
               variant="ghost"
-              className="text-gray-500 hover:text-red-500 hover:bg-red-50"
+              className="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
               onClick={onDislike}
             >
               <ThumbsDown className="h-4 w-4 mr-1" />

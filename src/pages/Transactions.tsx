@@ -118,13 +118,13 @@ const Transactions = () => {
         subtitle="View and track all your transactions"
       >
         {/* Filters */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 animate-fade-in">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 mb-6 animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <Input
                 placeholder="Search by description, recipient..."
-                className="pl-9"
+                className="pl-9 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -136,14 +136,22 @@ const Transactions = () => {
                 setTypeFilter(value === "all" ? null : value)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="send">Sent</SelectItem>
-                <SelectItem value="receive">Received</SelectItem>
-                <SelectItem value="swap">Swapped</SelectItem>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                <SelectItem value="all" className="dark:text-gray-200">
+                  All Types
+                </SelectItem>
+                <SelectItem value="send" className="dark:text-gray-200">
+                  Sent
+                </SelectItem>
+                <SelectItem value="receive" className="dark:text-gray-200">
+                  Received
+                </SelectItem>
+                <SelectItem value="swap" className="dark:text-gray-200">
+                  Swapped
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -153,14 +161,22 @@ const Transactions = () => {
                 setStatusFilter(value === "all" ? null : value)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                <SelectItem value="all" className="dark:text-gray-200">
+                  All Statuses
+                </SelectItem>
+                <SelectItem value="pending" className="dark:text-gray-200">
+                  Pending
+                </SelectItem>
+                <SelectItem value="completed" className="dark:text-gray-200">
+                  Completed
+                </SelectItem>
+                <SelectItem value="failed" className="dark:text-gray-200">
+                  Failed
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -175,6 +191,7 @@ const Transactions = () => {
                   setTypeFilter(null);
                   setStatusFilter(null);
                 }}
+                className="dark:text-gray-200 dark:hover:bg-gray-700"
               >
                 Clear Filters
               </Button>
@@ -188,7 +205,7 @@ const Transactions = () => {
 
           {filteredTransactions.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500">
+              <p className="text-gray-500 dark:text-gray-400">
                 No transactions found matching your filters
               </p>
             </div>

@@ -42,33 +42,33 @@ const TransactionList = ({ transactions, className }: TransactionListProps) => {
   return (
     <div className={cn("space-y-4", className)}>
       {transactions.length === 0 ? (
-        <div className="text-center py-6 text-gray-500">
+        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
           <p>No transactions yet</p>
         </div>
       ) : (
         transactions.map((transaction) => (
           <div
             key={transaction.id}
-            className="flex items-center p-3 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+            className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+            <div className="h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mr-3">
               {getTransactionIcon(transaction.type)}
             </div>
 
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-gray-900 truncate">
+              <h4 className="font-medium text-gray-900 dark:text-gray-200 truncate">
                 {transaction.type === "send"
                   ? `To: ${transaction.recipient}`
                   : transaction.type === "receive"
                     ? `From: ${transaction.recipient}`
                     : `Swap ${transaction.asset}`}
               </h4>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {transaction.description ||
                   transaction.travelReference ||
                   transaction.txHash.substring(0, 10) + "..."}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {new Date(transaction.timestamp).toLocaleString()}
               </p>
             </div>
@@ -93,7 +93,7 @@ const TransactionList = ({ transactions, className }: TransactionListProps) => {
               </p>
               <div className="flex items-center justify-end gap-1 mt-1">
                 {getStatusIcon(transaction.status)}
-                <span className="text-xs capitalize text-gray-500">
+                <span className="text-xs capitalize text-gray-500 dark:text-gray-400">
                   {transaction.status}
                 </span>
               </div>

@@ -1,12 +1,22 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Wallet, Map, Clock, Lightbulb, LayoutDashboard } from "lucide-react";
+import {
+  Wallet,
+  Map,
+  Clock,
+  Lightbulb,
+  LayoutDashboard,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useWalletStore } from "@/store/useStore";
+import { useTheme } from "../../components/theme-provider";
 
 const Navbar = () => {
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
 
   const {
     walletAddress,
@@ -57,7 +67,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:top-0 md:bottom-auto md:shadow-sm z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:top-0 md:bottom-auto md:shadow-sm z-50 dark:bg-gray-900 dark:border-gray-800">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3">
           <div className="hidden md:block">
@@ -75,7 +85,7 @@ const Navbar = () => {
                   "flex flex-col md:flex-row items-center gap-1 px-1 md:px-3 py-1 md:py-2 rounded-md transition-colors",
                   location.pathname === link.path
                     ? "text-latio-blue font-medium"
-                    : "text-gray-500 hover:text-latio-blue hover:bg-blue-50"
+                    : "text-gray-500 hover:text-latio-blue hover:bg-blue-50 dark:text-gray-400 dark:hover:text-latio-blue dark:hover:bg-gray-800"
                 )}
               >
                 {link.icon}
@@ -84,10 +94,23 @@ const Navbar = () => {
             ))}
           </div>
 
-          <div className="hidden md:block ml-auto">
+          <div className="hidden md:flex items-center gap-3 ml-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              className="dark:text-white"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+            </Button>
+
             {connected ? (
               <div className="flex items-center gap-3">
-                <span className="text-gray-700">
+                <span className="text-gray-700 dark:text-gray-300">
                   {formatPublicKey(walletAddress!)}
                 </span>
                 <Button
