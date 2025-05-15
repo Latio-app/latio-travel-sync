@@ -3,26 +3,47 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import AppRoutes from "@/routes";
 import { useWalletStore } from "@/store/useStore";
-import { RegisterUserModal } from "@/components/modals/register-user-modal";
+import { useEffect } from "react";
+import RegisterUserModal from "@/components/modals/register-user-modal";
 
 function App() {
-  const { showRegisterModal, setShowRegisterModal, walletAddress, contractId } =
-    useWalletStore();
+  const {
+    showRegisterModal,
+    walletAddress,
+    contractId,
+    passkeyId,
+    hasProfile,
+    isConnected,
+    checkUserProfile,
+    setShowRegisterModal,
+  } = useWalletStore();
+
+  useEffect(() => {
+    if (isConnected && !hasProfile) {
+      checkUserProfile();
+    }
+  }, [isConnected, hasProfile, checkUserProfile]);
+
+  const shouldShowRegisterModal = isConnected && !hasProfile;
 
   return (
-    <ThemeProvider defaultTheme="light" storageKey="latio-theme">
-      <Router>
-        <AppRoutes />
-        <Toaster />
-        {showRegisterModal && (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <div className="min-h-screen bg-background">
+        <Router>
+          <AppRoutes />
+          <Toaster />
           <RegisterUserModal
-            isOpen={showRegisterModal}
-            onClose={() => setShowRegisterModal(false)}
+            isOpen={shouldShowRegisterModal}
             walletAddress={walletAddress || ""}
             contractId={contractId || ""}
+            passkeyId={passkeyId || ""}
+            onClose={() => setShowRegisterModal(false)}
+            onRegistered={() => {
+              window.location.reload();
+            }}
           />
-        )}
-      </Router>
+        </Router>
+      </div>
     </ThemeProvider>
   );
 }

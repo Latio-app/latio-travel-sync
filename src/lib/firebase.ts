@@ -1,5 +1,29 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  Timestamp,
+} from "firebase/firestore";
+
+// Types for our user profile
+export interface UserProfile {
+  profile: {
+    name: string;
+    email: string;
+    walletAddress: string;
+    passkeyId: string;
+  };
+  _base: {
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+  };
+  balances: {
+    XLM: string;
+  };
+  preferredCurrency: string;
+}
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -10,5 +34,9 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+
+// Export Firestore functions
+export { doc, getDoc, setDoc, Timestamp };

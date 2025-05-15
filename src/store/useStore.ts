@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { PasskeyKit, SACClient, PasskeyServer } from "passkey-kit";
 import { Server } from "@stellar/stellar-sdk/rpc";
 import { xdr } from "@stellar/stellar-sdk";
+import { checkIfUserExists } from "@/api/userProfile";
 
 interface WalletState {
   walletAddress: string | null;
@@ -12,6 +13,9 @@ interface WalletState {
   connected: boolean;
   error: string | null;
   showRegisterModal: boolean;
+  passkeyId: string | null;
+  isConnected: boolean;
+  hasProfile: boolean;
   connectWallet: (app: string, user: string) => Promise<void>;
   signUpWallet: (app: string, user: string) => Promise<void>;
   signInWallet: () => Promise<void>;
@@ -20,6 +24,8 @@ interface WalletState {
   fetchBalance: () => Promise<void>;
   fundWallet: () => Promise<void>;
   setShowRegisterModal: (show: boolean) => void;
+  setHasProfile: (hasProfile: boolean) => void;
+  checkUserProfile: () => Promise<void>;
 }
 
 const rpc = new Server(import.meta.env.VITE_rpcUrl);
@@ -32,7 +38,7 @@ const sac = new SACClient({
 
 const native = sac.getSACClient(import.meta.env.VITE_nativeContractId);
 
-export const useWalletStore = create<WalletState>()(
+const useWalletStore = create<WalletState>()(
   persist(
     (set, get) => ({
       walletAddress: null,
@@ -42,10 +48,23 @@ export const useWalletStore = create<WalletState>()(
       connected: false,
       error: null,
       showRegisterModal: false,
+      passkeyId: null,
+      isConnected: false,
+      hasProfile: false,
 
-      /**
-       * ✅ Connect to Wallet (existing or new)
-       */
+      checkUserProfile: async () => {
+        const passkeyId = get().passkeyId;
+        if (!passkeyId) return;
+
+        try {
+          const exists = await checkIfUserExists(passkeyId);
+          set({ hasProfile: exists, showRegisterModal: !exists });
+          console.log("Profile check:", exists ? "Found" : "Not found");
+        } catch (error) {
+          console.error("Error checking profile:", error);
+        }
+      },
+
       connectWallet: async (app, user) => {
         if (!app || !user) {
           console.error("❌ Missing app or user parameter.");
@@ -61,7 +80,6 @@ export const useWalletStore = create<WalletState>()(
             walletWasmHash: import.meta.env.VITE_walletWasmHash,
           });
 
-          // ✅ Initialize the server
           const server = new PasskeyServer({
             rpcUrl: import.meta.env.VITE_rpcUrl,
             launchtubeUrl: import.meta.env.VITE_launchtubeUrl,
@@ -70,14 +88,12 @@ export const useWalletStore = create<WalletState>()(
             mercuryJwt: import.meta.env.VITE_mercuryJwt,
           });
 
-          // ✅ 1️⃣ Check if a wallet already exists in localStorage
           const storedKeyId = localStorage.getItem("sp:keyId");
           const storedContractId = localStorage.getItem("sp:contractId");
 
           if (storedKeyId && storedContractId) {
             console.log("🔓 Found existing wallet. Connecting...");
 
-            // ✅ 2️⃣ Connect to existing wallet
             const { keyId, contractId } = await account.connectWallet({
               keyId: storedKeyId,
               getContractId: (keyId) => server.getContractId({ keyId }),
@@ -88,15 +104,17 @@ export const useWalletStore = create<WalletState>()(
             set({
               walletAddress: contractId,
               contractId,
+              passkeyId: storedKeyId,
               connected: true,
               loading: false,
+              isConnected: true,
             });
 
+            await get().checkUserProfile();
             await get().fetchBalance();
           } else {
             console.log("🆕 No existing wallet found. Creating a new one...");
 
-            // ✅ 3️⃣ Create a new wallet
             const response = await account.createWallet(app, user);
 
             if (response.contractId && response.keyId) {
@@ -104,15 +122,18 @@ export const useWalletStore = create<WalletState>()(
                 `✅ New Wallet created! Contract ID: ${response.contractId}`
               );
 
-              // ✅ 4️⃣ Store in localStorage for future use
-              localStorage.setItem("sp:keyId", response.keyIdBase64); // <== Corrected
+              localStorage.setItem("sp:keyId", response.keyIdBase64);
               localStorage.setItem("sp:contractId", response.contractId);
 
               set({
                 walletAddress: response.contractId,
                 contractId: response.contractId,
+                passkeyId: response.keyIdBase64,
                 connected: true,
                 loading: false,
+                isConnected: true,
+                showRegisterModal: true,
+                hasProfile: false,
               });
 
               await get().fetchBalance();
@@ -126,55 +147,6 @@ export const useWalletStore = create<WalletState>()(
         }
       },
 
-      signUpWallet: async (app, user) => {
-        if (!app || !user) {
-          console.error("❌ Missing app or user parameter.");
-          return;
-        }
-
-        set({ loading: true, error: null });
-
-        try {
-          const account = new PasskeyKit({
-            rpcUrl: import.meta.env.VITE_rpcUrl,
-            networkPassphrase: import.meta.env.VITE_networkPassphrase,
-            walletWasmHash: import.meta.env.VITE_walletWasmHash,
-          });
-
-          console.log("🆕 Creating a new wallet...");
-
-          // ✅ 1️⃣ Create a new wallet
-          const response = await account.createWallet(app, user);
-
-          if (response.contractId && response.keyIdBase64) {
-            console.log(
-              `✅ New Wallet created! Contract ID: ${response.contractId}`
-            );
-
-            // ✅ 2️⃣ Store in localStorage for future use
-            localStorage.setItem("sp:keyId", response.keyIdBase64);
-            localStorage.setItem("sp:contractId", response.contractId);
-
-            set({
-              walletAddress: response.contractId,
-              contractId: response.contractId,
-              connected: true,
-              loading: false,
-            });
-
-            await get().fetchBalance();
-          } else {
-            throw new Error("Invalid Contract ID returned.");
-          }
-        } catch (error: any) {
-          console.error("❌ Wallet creation failed:", error.message);
-          set({ loading: false, connected: false, error: error.message });
-        }
-      },
-
-      /**
-       * ✅ Sign In (Only Connects to Existing Wallet)
-       */
       signInWallet: async () => {
         try {
           const storedKeyId = localStorage.getItem("sp:keyId");
@@ -197,7 +169,6 @@ export const useWalletStore = create<WalletState>()(
               mercuryJwt: import.meta.env.VITE_mercuryJwt,
             });
 
-            // ✅ Connect to existing wallet
             const { contractId } = await account.connectWallet({
               keyId: storedKeyId,
               getContractId: (keyId) => server.getContractId({ keyId }),
@@ -208,10 +179,13 @@ export const useWalletStore = create<WalletState>()(
             set({
               walletAddress: contractId,
               contractId,
+              passkeyId: storedKeyId,
               connected: true,
               loading: false,
+              isConnected: true,
             });
 
+            await get().checkUserProfile();
             await get().fetchBalance();
           } else {
             console.error("❌ No wallet found in local storage.");
@@ -226,38 +200,7 @@ export const useWalletStore = create<WalletState>()(
           set({ loading: false, connected: false, error: error.message });
         }
       },
-      /**
-       * ✅ Fetch Balance from the contract
-       */
-      fetchBalance: async () => {
-        try {
-          const { result } = await native.balance({
-            id: get().contractId!,
-          });
 
-          console.log("🔍 Wallet Balance:", result.toString());
-          set({ balanceXLM: result.toString() });
-        } catch (error) {
-          console.error("❌ Failed to fetch balance:", error.message);
-        }
-      },
-
-      /**
-       * 💸 Fund the wallet with 10 XLM for testing
-       */
-      fundWallet: async () => {
-        try {
-          await rpc.requestAirdrop(get().contractId!, "10");
-          console.log("💸 10 XLM Airdropped!");
-          await get().fetchBalance();
-        } catch (error) {
-          console.error("❌ Airdrop failed:", error.message);
-        }
-      },
-
-      /**
-       * 🔌 Disconnect the wallet and clear state
-       */
       disconnectWallet: () => {
         console.log("🔌 Disconnecting Wallet...");
         localStorage.removeItem("sp:keyId");
@@ -271,34 +214,114 @@ export const useWalletStore = create<WalletState>()(
           loading: false,
           error: null,
           showRegisterModal: false,
+          passkeyId: null,
+          isConnected: false,
+          hasProfile: false,
         });
       },
 
-      /**
-       * ♻️ Load the wallet from localStorage if it exists
-       */
+      fetchBalance: async () => {
+        try {
+          const { result } = await native.balance({
+            id: get().contractId!,
+          });
+
+          console.log("🔍 Wallet Balance:", result.toString());
+          set({ balanceXLM: result.toString() });
+        } catch (error) {
+          console.error("❌ Failed to fetch balance:", error.message);
+        }
+      },
+
+      fundWallet: async () => {
+        try {
+          await rpc.requestAirdrop(get().contractId!, "10");
+          console.log("💸 10 XLM Airdropped!");
+          await get().fetchBalance();
+        } catch (error) {
+          console.error("❌ Airdrop failed:", error.message);
+        }
+      },
+
+      setShowRegisterModal: (show: boolean) => {
+        set({ showRegisterModal: show });
+      },
+
+      setHasProfile: (hasProfile: boolean) => {
+        set({ hasProfile, showRegisterModal: !hasProfile });
+      },
+
+      signUpWallet: async (app, user) => {
+        if (!app || !user) {
+          console.error("❌ Missing app or user parameter.");
+          return;
+        }
+
+        set({ loading: true, error: null });
+
+        try {
+          const account = new PasskeyKit({
+            rpcUrl: import.meta.env.VITE_rpcUrl,
+            networkPassphrase: import.meta.env.VITE_networkPassphrase,
+            walletWasmHash: import.meta.env.VITE_walletWasmHash,
+          });
+
+          console.log("🆕 Creating a new wallet...");
+
+          const response = await account.createWallet(app, user);
+
+          if (response.contractId && response.keyIdBase64) {
+            console.log(
+              `✅ New Wallet created! Contract ID: ${response.contractId}`
+            );
+
+            localStorage.setItem("sp:keyId", response.keyIdBase64);
+            localStorage.setItem("sp:contractId", response.contractId);
+
+            set({
+              walletAddress: response.contractId,
+              contractId: response.contractId,
+              passkeyId: response.keyIdBase64,
+              connected: true,
+              loading: false,
+              isConnected: true,
+              showRegisterModal: true,
+              hasProfile: false,
+            });
+
+            await get().fetchBalance();
+          } else {
+            throw new Error("Invalid Contract ID returned.");
+          }
+        } catch (error: any) {
+          console.error("❌ Wallet creation failed:", error.message);
+          set({ loading: false, connected: false, error: error.message });
+        }
+      },
+
       loadWalletFromStorage: () => {
         const storedData = JSON.parse(
           localStorage.getItem("zustand_wallet") || "{}"
         );
         if (storedData && storedData.state) {
-          const { walletAddress, contractId, balanceXLM, connected } =
-            storedData.state;
+          const {
+            walletAddress,
+            contractId,
+            balanceXLM,
+            connected,
+            passkeyId,
+            hasProfile,
+          } = storedData.state;
           set({
             walletAddress,
             contractId,
             balanceXLM,
             connected,
+            passkeyId,
+            hasProfile,
           });
           console.log("✅ State restored from localStorage");
         }
-      },
-
-      /**
-       * 🛠️ Show or hide the registration modal
-       */
-      setShowRegisterModal: (show: boolean) => {
-        set({ showRegisterModal: show });
       },
     }),
     {
@@ -308,7 +331,17 @@ export const useWalletStore = create<WalletState>()(
         contractId: state.contractId,
         balanceXLM: state.balanceXLM,
         connected: state.connected,
+        passkeyId: state.passkeyId,
+        hasProfile: state.hasProfile,
       }),
+      onRehydrateStorage: () => (state) => {
+        console.log("✅ State restored from localStorage");
+        if (state?.passkeyId) {
+          state.checkUserProfile();
+        }
+      },
     }
   )
 );
+
+export { useWalletStore };

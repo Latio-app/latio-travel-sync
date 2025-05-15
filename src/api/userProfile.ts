@@ -1,71 +1,73 @@
 import {
+  db,
   doc,
-  setDoc,
   getDoc,
-  updateDoc,
-  deleteDoc,
+  setDoc,
   Timestamp,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import {
   UserProfile,
-  CreateUserProfileDTO,
-  UpdateUserProfileDTO,
-} from "@/types/user";
+} from "@/lib/firebase";
 
-const COLLECTION_NAME = "users";
-
-export const createUserProfile = async (
-  data: CreateUserProfileDTO
-): Promise<void> => {
-  const userRef = doc(db, COLLECTION_NAME, data.userId);
-  const userData: Omit<UserProfile, "userId"> = {
-    walletAddress: data.walletAddress,
-    contractId: data.contractId,
-    email: data.email,
-    balanceXLM: "0",
-    createdAt: serverTimestamp() as unknown as Date,
-    lastLogin: serverTimestamp() as unknown as Date,
-    isDeleted: false,
-  };
-
-  await setDoc(userRef, userData);
-};
-
-export const getUserProfile = async (
-  userId: string
-): Promise<UserProfile | null> => {
-  const userRef = doc(db, COLLECTION_NAME, userId);
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists()) {
-    return null;
+/**
+ * 🔍 **Check if User Exists in Firestore**
+ */
+export const checkIfUserExists = async (
+  passkeyId: string
+): Promise<boolean> => {
+  try {
+    const userRef = doc(db, "users", passkeyId);
+    const userSnap = await getDoc(userRef);
+    return userSnap.exists();
+  } catch (error) {
+    console.error("Error checking if user exists:", error);
+    throw new Error("Failed to check if user exists");
   }
-
-  const data = userSnap.data();
-  return {
-    userId,
-    ...data,
-    createdAt: (data.createdAt as Timestamp).toDate(),
-    lastLogin: (data.lastLogin as Timestamp).toDate(),
-  } as UserProfile;
 };
 
-export const updateUserProfile = async (
-  userId: string,
-  data: UpdateUserProfileDTO
+/**
+ * ➕ **Create a New User in Firestore**
+ */
+export const createUserProfile = async (
+  passkeyId: string,
+  walletAddress: string,
+  name: string,
+  email: string
 ): Promise<void> => {
-  const userRef = doc(db, COLLECTION_NAME, userId);
-  const updateData: Partial<UserProfile> = {
-    ...data,
-    lastLogin: data.lastLogin || (serverTimestamp() as unknown as Date),
-  };
+  try {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Invalid email format");
+    }
 
-  await updateDoc(userRef, updateData);
-};
+    // Check if user already exists
+    const exists = await checkIfUserExists(passkeyId);
+    if (exists) {
+      throw new Error("User already exists");
+    }
 
-export const deleteUserProfile = async (userId: string): Promise<void> => {
-  const userRef = doc(db, COLLECTION_NAME, userId);
-  await updateDoc(userRef, { isDeleted: true });
+    const now = Timestamp.now();
+    const userData: UserProfile = {
+      profile: {
+        name,
+        email,
+        walletAddress,
+        passkeyId,
+      },
+      _base: {
+        createdAt: now,
+        updatedAt: now,
+      },
+      balances: {
+        XLM: "0.00",
+      },
+      preferredCurrency: "USD",
+    };
+
+    const userRef = doc(db, "users", passkeyId);
+    await setDoc(userRef, userData);
+    console.log(`✅ User profile created for ${passkeyId}`);
+  } catch (error) {
+    console.error("Error creating user profile:", error);
+    throw error;
+  }
 };
