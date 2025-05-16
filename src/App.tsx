@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 
-function App() {
+function AppContent() {
   const {
     showRegisterModal,
     walletAddress,
@@ -30,25 +30,31 @@ function App() {
   const shouldShowRegisterModal = isConnected && !hasProfile;
 
   return (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <div className="min-h-screen bg-background">
+        <BrowserRouter>
+          <AppRoutes />
+          <Toaster />
+          <RegisterUserModal
+            isOpen={shouldShowRegisterModal}
+            walletAddress={walletAddress || ""}
+            contractId={contractId || ""}
+            passkeyId={passkeyId || ""}
+            onClose={() => setShowRegisterModal(false)}
+            onRegistered={() => {
+              window.location.reload();
+            }}
+          />
+        </BrowserRouter>
+      </div>
+    </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <div className="min-h-screen bg-background">
-          <BrowserRouter>
-            <AppRoutes />
-            <Toaster />
-            <RegisterUserModal
-              isOpen={shouldShowRegisterModal}
-              walletAddress={walletAddress || ""}
-              contractId={contractId || ""}
-              passkeyId={passkeyId || ""}
-              onClose={() => setShowRegisterModal(false)}
-              onRegistered={() => {
-                window.location.reload();
-              }}
-            />
-          </BrowserRouter>
-        </div>
-      </ThemeProvider>
+      <AppContent />
     </QueryClientProvider>
   );
 }

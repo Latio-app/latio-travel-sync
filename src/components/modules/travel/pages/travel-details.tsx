@@ -5,7 +5,7 @@ import TravelDetailsCard from "@/components/modules/travel/components/TravelDeta
 import TravelBudgetOverview from "@/components/modules/travel/components/TravelBudgetOverview";
 import TravelStipendOverview from "@/components/modules/travel/components/TravelStipendOverview";
 import TravelDates from "@/components/modules/travel/components/TravelDates";
-import TravelAIRecommendations from "@/components/modules/travel/components/TravelAIRecommendations";
+import { RecommendationsSection } from "@/components/modules/recommendations/components/RecommendationsSection";
 import { useWalletStore } from "@/store/useStore";
 import { useTravelPlan } from "@/hooks/useTravelPlan";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,12 @@ const TravelDetailsPage = () => {
     updateBudget,
     updateStipend,
   } = useTravelPlan(walletAddress, travelId);
+
+  const calculateDuration = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  };
 
   if (error) {
     return (
@@ -92,9 +98,15 @@ const TravelDetailsPage = () => {
             startDate={travelPlan.startDate}
             endDate={travelPlan.endDate}
           />
-          <TravelAIRecommendations
-            recommendations={travelPlan.aiRecommendations}
-            isLoading={isLoading}
+          <RecommendationsSection
+            userId={walletAddress}
+            travelId={travelId}
+            location={travelPlan.destination}
+            budget={travelPlan.budget.initial}
+            duration={calculateDuration(
+              travelPlan.startDate,
+              travelPlan.endDate
+            )}
           />
         </div>
       </PageContainer>
