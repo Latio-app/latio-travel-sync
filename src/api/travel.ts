@@ -13,6 +13,7 @@ import {
   getDoc,
   onSnapshot,
 } from "firebase/firestore";
+import { TravelPlan } from "@/types/travel";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
@@ -41,30 +42,6 @@ const retryOperation = async <T>(
     throw error;
   }
 };
-
-export interface TravelPlan {
-  id: string;
-  title: string;
-  destination: string;
-  startDate: string;
-  endDate: string;
-  status: "active" | "upcoming" | "past";
-  budget: {
-    initial: number;
-    spent: number;
-    currency: string;
-  };
-  stipend?: {
-    dailyLimit: number;
-    currency: string;
-    totalDays: number;
-    totalAmount: number;
-  };
-  aiRecommendations?: {
-    category: string;
-    suggestions: string[];
-  }[];
-}
 
 export const fetchTravelPlans = async (
   userId: string

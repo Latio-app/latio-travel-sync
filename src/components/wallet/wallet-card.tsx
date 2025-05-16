@@ -1,15 +1,15 @@
-
 import { WalletBalance } from "@/@types";
 import LatioCard from "../ui/latio-card";
-import { ArrowRight, Wallet } from "lucide-react";
+import { ArrowRight, Wallet, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface WalletCardProps {
   balance: WalletBalance;
   onSend?: () => void;
   onSwap?: () => void;
-  onSync?: () => void;
+  onSync?: () => Promise<void>;
   className?: string;
 }
 
@@ -20,6 +20,18 @@ const WalletCard = ({
   onSync,
   className,
 }: WalletCardProps) => {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    if (!onSync) return;
+    setIsSyncing(true);
+    try {
+      await onSync();
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (!balance) {
     return null; // Safety check to prevent rendering with null balance
   }
@@ -65,9 +77,13 @@ const WalletCard = ({
             size="sm"
             variant="outline"
             className="bg-white/20 backdrop-blur-sm border-white/20 text-white hover:bg-white/30 ml-auto"
-            onClick={onSync}
+            onClick={handleSync}
+            disabled={isSyncing}
           >
-            Sync
+            <RefreshCw
+              className={cn("h-4 w-4 mr-1", isSyncing && "animate-spin")}
+            />
+            {isSyncing ? "Syncing..." : "Sync"}
           </Button>
         </div>
       </div>

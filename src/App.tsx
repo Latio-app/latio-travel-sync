@@ -19,6 +19,8 @@ function AppContent() {
     isConnected,
     checkUserProfile,
     setShowRegisterModal,
+    fetchBalance,
+    fetchTransactions,
   } = useWalletStore();
 
   useEffect(() => {
@@ -26,6 +28,15 @@ function AppContent() {
       checkUserProfile();
     }
   }, [isConnected, hasProfile, checkUserProfile]);
+
+  useEffect(() => {
+    if (isConnected && walletAddress) {
+      // Sync wallet data on app load
+      Promise.all([fetchBalance(), fetchTransactions()]).catch((error) => {
+        console.error("Error syncing wallet data:", error);
+      });
+    }
+  }, [isConnected, walletAddress, fetchBalance, fetchTransactions]);
 
   const shouldShowRegisterModal = isConnected && !hasProfile;
 
@@ -51,12 +62,10 @@ function AppContent() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
     </QueryClientProvider>
   );
 }
-
-export default App;

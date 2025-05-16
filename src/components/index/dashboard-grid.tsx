@@ -1,7 +1,8 @@
-
+import { useNavigate } from "react-router-dom";
 import WalletCard from "@/components/wallet/wallet-card";
 import TravelCard from "@/components/travel/travel-card";
-import { useNavigate } from "react-router-dom";
+import { useWalletStore } from "@/store/useStore";
+import { TravelPlan } from "@/types/travel";
 
 interface DashboardGridProps {
   walletBalance: {
@@ -9,26 +10,7 @@ interface DashboardGridProps {
     preferredCurrency: string;
     localAmount: number;
   } | null;
-  travelPlan: {
-    id: string;
-    title: string;
-    destination: {
-      city: string;
-      country: string;
-    };
-    budget: {
-      initial: number;
-      spent: number;
-      remaining: number;
-    };
-    stipend: {
-      dailyLimit: number;
-      currency: string;
-    };
-    startDate: string;
-    endDate: string;
-    _base: Record<string, any>;
-  };
+  travelPlan: TravelPlan | null;
 }
 
 export const DashboardGrid = ({
@@ -36,6 +18,11 @@ export const DashboardGrid = ({
   travelPlan,
 }: DashboardGridProps) => {
   const navigate = useNavigate();
+  const { fetchBalance, fetchTransactions } = useWalletStore();
+
+  const handleSync = async () => {
+    await Promise.all([fetchBalance(), fetchTransactions()]);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 animate-fade-in">
@@ -44,12 +31,14 @@ export const DashboardGrid = ({
           balance={walletBalance}
           onSend={() => navigate("/wallet")}
           onSwap={() => navigate("/wallet")}
-          onSync={() => alert("Syncing wallet...")}
+          onSync={handleSync}
         />
       ) : (
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center items-center">
-          <p className="text-gray-500 mb-2">Connect your wallet to view balance</p>
-          <button 
+          <p className="text-gray-500 mb-2">
+            Connect your wallet to view balance
+          </p>
+          <button
             onClick={() => navigate("/wallet")}
             className="text-sm text-blue-600 hover:underline"
           >

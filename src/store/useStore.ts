@@ -4,6 +4,11 @@ import { PasskeyKit, SACClient, PasskeyServer } from "passkey-kit";
 import { Server } from "@stellar/stellar-sdk/rpc";
 import { xdr } from "@stellar/stellar-sdk";
 import { checkIfUserExists } from "@/api/userProfile";
+import {
+  getStellarBalance,
+  fetchTransactionHistory,
+} from "@/api/stellarContract";
+import { Transaction } from "@/types/wallet";
 
 interface WalletState {
   walletAddress: string | null;
@@ -26,6 +31,20 @@ interface WalletState {
   setShowRegisterModal: (show: boolean) => void;
   setHasProfile: (hasProfile: boolean) => void;
   checkUserProfile: () => Promise<void>;
+  userId: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  balance: string;
+  transactions: Transaction[];
+  setUserId: (userId: string | null) => void;
+  setWalletAddress: (address: string | null) => void;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
+  setLoading: (isLoading: boolean) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
+  setBalance: (balance: string) => void;
+  setTransactions: (transactions: Transaction[]) => void;
+  fetchTransactions: () => Promise<void>;
 }
 
 const rpc = new Server(import.meta.env.VITE_rpcUrl);
@@ -51,17 +70,25 @@ const useWalletStore = create<WalletState>()(
       passkeyId: null,
       isConnected: false,
       hasProfile: false,
+      userId: null,
+      isAuthenticated: false,
+      isLoading: false,
+      balance: "0",
+      transactions: [],
 
       checkUserProfile: async () => {
-        const passkeyId = get().passkeyId;
-        if (!passkeyId) return;
-
         try {
-          const exists = await checkIfUserExists(passkeyId);
-          set({ hasProfile: exists, showRegisterModal: !exists });
-          console.log("Profile check:", exists ? "Found" : "Not found");
-        } catch (error) {
-          console.error("Error checking profile:", error);
+          const { walletAddress } = get();
+          if (!walletAddress) return;
+
+          const hasProfile = await checkIfUserExists(walletAddress);
+          set({ hasProfile });
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to check user profile";
+          set({ error: errorMessage });
         }
       },
 
@@ -217,19 +244,30 @@ const useWalletStore = create<WalletState>()(
           passkeyId: null,
           isConnected: false,
           hasProfile: false,
+          userId: null,
+          isAuthenticated: false,
+          isLoading: false,
+          balance: "0",
+          transactions: [],
         });
       },
 
       fetchBalance: async () => {
-        try {
-          const { result } = await native.balance({
-            id: get().contractId!,
-          });
+        const { walletAddress } = get();
+        if (!walletAddress) return;
 
-          console.log("🔍 Wallet Balance:", result.toString());
-          set({ balanceXLM: result.toString() });
-        } catch (error) {
-          console.error("❌ Failed to fetch balance:", error.message);
+        set({ isLoading: true, error: null });
+        try {
+          const balances = await getStellarBalance(walletAddress);
+          const nativeBalance =
+            balances.find((b) => b.asset_type === "native")?.balance || "0";
+          set({ balance: nativeBalance });
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to fetch balance";
+          set({ error: errorMessage });
+        } finally {
+          set({ isLoading: false });
         }
       },
 
@@ -311,6 +349,11 @@ const useWalletStore = create<WalletState>()(
             connected,
             passkeyId,
             hasProfile,
+            userId,
+            isAuthenticated,
+            isLoading,
+            balance,
+            transactions,
           } = storedData.state;
           set({
             walletAddress,
@@ -319,8 +362,48 @@ const useWalletStore = create<WalletState>()(
             connected,
             passkeyId,
             hasProfile,
+            userId,
+            isAuthenticated,
+            isLoading,
+            balance,
+            transactions,
           });
           console.log("✅ State restored from localStorage");
+        }
+      },
+
+      setUserId: (userId) => set({ userId }),
+      setWalletAddress: (address) => {
+        set({ walletAddress: address });
+        if (address) {
+          get().fetchBalance();
+          get().fetchTransactions();
+        }
+      },
+      setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+      setLoading: (isLoading) => set({ isLoading }),
+      setError: (error) => set({ error }),
+      clearError: () => set({ error: null }),
+      setBalance: (balance) => set({ balance }),
+      setTransactions: (transactions) => set({ transactions }),
+      fetchTransactions: async () => {
+        const { walletAddress } = get();
+        if (!walletAddress) return;
+
+        set({ isLoading: true, error: null });
+        try {
+          const transactions = await fetchTransactionHistory(walletAddress);
+          set({ transactions });
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch transactions";
+          set({
+            error: errorMessage,
+          });
+        } finally {
+          set({ isLoading: false });
         }
       },
     }),
@@ -333,11 +416,23 @@ const useWalletStore = create<WalletState>()(
         connected: state.connected,
         passkeyId: state.passkeyId,
         hasProfile: state.hasProfile,
+        userId: state.userId,
+        isAuthenticated: state.isAuthenticated,
+        isLoading: state.isLoading,
+        balance: state.balance,
+        transactions: state.transactions,
       }),
       onRehydrateStorage: () => (state) => {
-        console.log("✅ State restored from localStorage");
-        if (state?.passkeyId) {
-          state.checkUserProfile();
+        if (state) {
+          try {
+            const { walletAddress } = state;
+            if (walletAddress) {
+              state.fetchBalance();
+              state.fetchTransactions();
+            }
+          } catch (error: unknown) {
+            console.error("Error rehydrating state:", error);
+          }
         }
       },
     }
