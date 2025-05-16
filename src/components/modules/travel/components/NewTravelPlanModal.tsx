@@ -36,7 +36,11 @@ const NewTravelPlanModal = ({
       destination,
       startDate,
       endDate,
-      budget: Number(budget),
+      budget: {
+        initial: Number(budget),
+        spent: 0,
+        currency: "USD",
+      },
       status: "upcoming",
     });
   };

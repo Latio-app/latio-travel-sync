@@ -10,7 +10,37 @@ import {
   where,
   orderBy,
   Timestamp,
+  getDoc,
+  onSnapshot,
 } from "firebase/firestore";
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+interface BlockedError extends Error {
+  message: string;
+}
+
+const retryOperation = async <T>(
+  operation: () => Promise<T>,
+  retries = MAX_RETRIES
+): Promise<T> => {
+  try {
+    return await operation();
+  } catch (error) {
+    const blockedError = error as BlockedError;
+    if (
+      blockedError?.message?.includes("ERR_BLOCKED_BY_CLIENT") &&
+      retries > 0
+    ) {
+      await sleep(RETRY_DELAY);
+      return retryOperation(operation, retries - 1);
+    }
+    throw error;
+  }
+};
 
 export interface TravelPlan {
   id: string;
@@ -18,42 +48,52 @@ export interface TravelPlan {
   destination: string;
   startDate: string;
   endDate: string;
-  budget: number;
   status: "active" | "upcoming" | "past";
-  createdAt: string;
-  updatedAt: string;
+  budget: {
+    initial: number;
+    spent: number;
+    currency: string;
+  };
+  stipend?: {
+    dailyLimit: number;
+    currency: string;
+    totalDays: number;
+    totalAmount: number;
+  };
+  aiRecommendations?: {
+    category: string;
+    suggestions: string[];
+  }[];
 }
 
-export const fetchTravelPlans = async (userId: string) => {
+export const fetchTravelPlans = async (
+  userId: string
+): Promise<TravelPlan[]> => {
   if (!userId) {
     console.error("No userId provided to fetchTravelPlans");
     return [];
   }
 
-  try {
-    const plansRef = collection(db, "users", userId, "travel");
-    const q = query(plansRef, orderBy("startDate", "desc"));
-    const snapshot = await getDocs(q);
+  return retryOperation(async () => {
+    const travelRef = collection(db, "users", userId, "travel");
+    const snapshot = await getDocs(travelRef);
     return snapshot.docs.map(
       (doc) => ({ id: doc.id, ...doc.data() }) as TravelPlan
     );
-  } catch (error) {
-    console.error("Error fetching travel plans:", error);
-    throw error;
-  }
+  });
 };
 
 export const createTravelPlan = async (
   userId: string,
   plan: Omit<TravelPlan, "id" | "createdAt" | "updatedAt">
 ) => {
+  console.log(userId);
   if (!userId) {
     throw new Error("No userId provided to createTravelPlan");
   }
 
-  try {
-    console.log("Creating travel plan in Firestore:", { userId, plan });
-    const plansRef = collection(db, "users", userId, "travel");
+  return retryOperation(async () => {
+    const travelRef = collection(db, "users", userId, "travel");
     const now = Timestamp.now().toDate().toISOString();
 
     const newPlan = {
@@ -62,48 +102,132 @@ export const createTravelPlan = async (
       updatedAt: now,
     };
 
-    const docRef = await addDoc(plansRef, newPlan);
-    console.log("Travel plan created with ID:", docRef.id);
+    const docRef = await addDoc(travelRef, newPlan);
     return { id: docRef.id, ...newPlan };
-  } catch (error) {
-    console.error("Error creating travel plan:", error);
-    throw error;
-  }
+  });
 };
 
 export const updateTravelPlan = async (
   userId: string,
-  planId: string,
-  updates: Partial<TravelPlan>
+  travelId: string,
+  data: Partial<TravelPlan>
 ) => {
-  if (!userId || !planId) {
-    throw new Error("Missing userId or planId in updateTravelPlan");
+  if (!userId || !travelId) {
+    throw new Error("Missing userId or travelId in updateTravelPlan");
   }
 
-  try {
-    const planRef = doc(db, "users", userId, "travel", planId);
-    const now = Timestamp.now().toDate().toISOString();
+  return retryOperation(async () => {
+    const travelRef = doc(db, "users", userId, "travel", travelId);
+    await updateDoc(travelRef, data);
+  });
+};
 
-    await updateDoc(planRef, {
-      ...updates,
-      updatedAt: now,
-    });
+export const deleteTravelPlan = async (userId: string, travelId: string) => {
+  if (!userId || !travelId) {
+    throw new Error("Missing userId or travelId in deleteTravelPlan");
+  }
+
+  return retryOperation(async () => {
+    const travelRef = doc(db, "users", userId, "travel", travelId);
+    await deleteDoc(travelRef);
+  });
+};
+
+export const fetchTravelPlan = async (
+  userId: string,
+  travelId: string
+): Promise<TravelPlan> => {
+  if (!userId || !travelId) {
+    throw new Error("Missing userId or travelId in fetchTravelPlan");
+  }
+
+  return retryOperation(async () => {
+    const travelRef = doc(db, "users", userId, "travel", travelId);
+    const snapshot = await getDoc(travelRef);
+
+    if (!snapshot.exists()) {
+      throw new Error("Travel plan not found");
+    }
+
+    return { id: snapshot.id, ...snapshot.data() } as TravelPlan;
+  });
+};
+
+export const subscribeToTravelPlan = (
+  userId: string,
+  travelId: string,
+  callback: (travelPlan: TravelPlan) => void
+) => {
+  const travelRef = doc(db, "users", userId, "travel", travelId);
+
+  try {
+    return onSnapshot(
+      travelRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          callback({ id: snapshot.id, ...snapshot.data() } as TravelPlan);
+        }
+      },
+      (error) => {
+        console.warn("Error in travel plan subscription:", error);
+        setTimeout(() => {
+          subscribeToTravelPlan(userId, travelId, callback);
+        }, RETRY_DELAY);
+      }
+    );
   } catch (error) {
-    console.error("Error updating travel plan:", error);
-    throw error;
+    console.warn("Error setting up travel plan subscription:", error);
+    return () => {};
   }
 };
 
-export const deleteTravelPlan = async (userId: string, planId: string) => {
-  if (!userId || !planId) {
-    throw new Error("Missing userId or planId in deleteTravelPlan");
-  }
+export const updateAIRecommendations = async (
+  userId: string,
+  travelId: string,
+  recommendations: TravelPlan["aiRecommendations"]
+) => {
+  return retryOperation(async () => {
+    const travelRef = doc(
+      db,
+      "users",
+      "CCIGAE2V6HR36I2CMLG47LPZFGSHPTRGYCFTH267M5D7ZXJHU4B5EF6R",
+      "travel",
+      travelId
+    );
+    await updateDoc(travelRef, { aiRecommendations: recommendations });
+  });
+};
 
-  try {
-    const planRef = doc(db, "users", userId, "travel", planId);
-    await deleteDoc(planRef);
-  } catch (error) {
-    console.error("Error deleting travel plan:", error);
-    throw error;
-  }
+export const updateBudget = async (
+  userId: string,
+  travelId: string,
+  budget: TravelPlan["budget"]
+) => {
+  return retryOperation(async () => {
+    const travelRef = doc(
+      db,
+      "users",
+      "CCIGAE2V6HR36I2CMLG47LPZFGSHPTRGYCFTH267M5D7ZXJHU4B5EF6R",
+      "travel",
+      travelId
+    );
+    await updateDoc(travelRef, { budget });
+  });
+};
+
+export const updateStipend = async (
+  userId: string,
+  travelId: string,
+  stipend: TravelPlan["stipend"]
+) => {
+  return retryOperation(async () => {
+    const travelRef = doc(
+      db,
+      "users",
+      "CCIGAE2V6HR36I2CMLG47LPZFGSHPTRGYCFTH267M5D7ZXJHU4B5EF6R",
+      "travel",
+      travelId
+    );
+    await updateDoc(travelRef, { stipend });
+  });
 };

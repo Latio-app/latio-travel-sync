@@ -2,7 +2,8 @@ import { Routes, Route } from "react-router-dom";
 import { PasskeyProvider } from "@/context/PasskeyContext";
 import Index from "@/pages/Index";
 import Wallet from "@/pages/Wallet";
-import Travel from "@/pages/Travel";
+import Travel from "@/components/modules/travel/pages/travel";
+import TravelDetails from "@/components/modules/travel/pages/travel-details";
 import Transactions from "@/pages/Transactions";
 import Recommendations from "@/pages/Recommendations";
 import NotFound from "@/pages/NotFound";
@@ -14,6 +15,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/wallet" element={<Wallet />} />
         <Route path="/travel" element={<Travel />} />
+        <Route path="/travel/:travelId" element={<TravelDetails />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/recommendations" element={<Recommendations />} />
         <Route path="*" element={<NotFound />} />
