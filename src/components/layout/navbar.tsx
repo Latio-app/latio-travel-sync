@@ -41,7 +41,7 @@ const Navbar = () => {
   const navLinks = [
     {
       name: "Dashboard",
-      path: "/",
+      path: "/dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
@@ -76,23 +76,25 @@ const Navbar = () => {
             </Link>
           </div>
 
-          <div className="flex items-center justify-between w-full md:w-auto md:justify-start md:gap-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={cn(
-                  "flex flex-col md:flex-row items-center gap-1 px-1 md:px-3 py-1 md:py-2 rounded-md transition-colors",
-                  location.pathname === link.path
-                    ? "text-latio-blue font-medium"
-                    : "text-gray-500 hover:text-latio-blue hover:bg-blue-50 dark:text-gray-400 dark:hover:text-latio-blue dark:hover:bg-gray-800"
-                )}
-              >
-                {link.icon}
-                <span className="text-xs md:text-sm">{link.name}</span>
-              </Link>
-            ))}
-          </div>
+          {connected && (
+            <div className="flex items-center justify-between w-full md:w-auto md:justify-start md:gap-6">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={cn(
+                    "flex flex-col md:flex-row items-center gap-1 px-1 md:px-3 py-1 md:py-2 rounded-md transition-colors",
+                    location.pathname === link.path
+                      ? "text-latio-blue font-medium"
+                      : "text-gray-500 hover:text-latio-blue hover:bg-blue-50 dark:text-gray-400 dark:hover:text-latio-blue dark:hover:bg-gray-800"
+                  )}
+                >
+                  {link.icon}
+                  <span className="text-xs md:text-sm">{link.name}</span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           <div className="hidden md:flex items-center gap-3 ml-auto">
             <Button
